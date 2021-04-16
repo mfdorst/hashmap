@@ -61,6 +61,14 @@ where
             .map(|(_, v)| v)
     }
 
+    pub fn remove(&mut self, key: &K) -> Option<V> {
+        let index = Self::hash_index(key, self.buckets.len());
+        let bucket = &mut self.buckets[index];
+        let i = bucket.iter().position(|(k, _)| k == key)?;
+        let (_, v) = bucket.swap_remove(i);
+        Some(v)
+    }
+
     fn hash_index(key: &K, table_size: usize) -> usize {
         let mut hasher = DefaultHasher::new();
         key.hash(&mut hasher);
@@ -73,9 +81,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn insert() {
+    fn basic_operations() {
         let mut map = HashMap::new();
         map.insert("foo", 42);
         assert_eq!(map.get(&"foo"), Some(&42));
+        assert_eq!(map.remove(&"foo"), Some(42));
+        assert_eq!(map.get(&"foo"), None);
     }
 }
