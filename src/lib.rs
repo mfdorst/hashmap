@@ -90,6 +90,52 @@ where
     }
 }
 
+pub struct Iter<'a, K, V> {
+    map: &'a HashMap<K, V>,
+    bucket_index: usize,
+    elem_index: usize,
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.map.buckets.get(self.bucket_index) {
+                Some(bucket) => match bucket.get(self.elem_index) {
+                    Some((k, v)) => {
+                        self.elem_index += 1;
+                        break Some((&k, &v));
+                    }
+                    None => {
+                        self.bucket_index += 1;
+                        self.elem_index = 0;
+                        continue;
+                    }
+                },
+                None => break None,
+            }
+        }
+    }
+}
+
+impl<'a, K, V> Iter<'a, K, V> {
+    fn new(map: &'a HashMap<K, V>) -> Self {
+        Iter {
+            map,
+            bucket_index: 0,
+            elem_index: 0,
+        }
+    }
+}
+
+impl<'a, K, V> IntoIterator for &'a HashMap<K, V> {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+    fn into_iter(self) -> Iter<'a, K, V> {
+        Iter::new(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,5 +154,24 @@ mod tests {
         assert_eq!(map.len(), 0);
         assert!(map.is_empty());
         assert_eq!(map.get(&"foo"), None);
+    }
+
+    #[test]
+    fn iter() {
+        let mut map = HashMap::new();
+        map.insert("foo", 42);
+        map.insert("bar", 45);
+        map.insert("baz", 50);
+        map.insert("quox", 55);
+        for (&k, &v) in &map {
+            match k {
+                "foo" => assert_eq!(v, 42),
+                "bar" => assert_eq!(v, 45),
+                "baz" => assert_eq!(v, 50),
+                "quox" => assert_eq!(v, 55),
+                _ => unreachable!(),
+            }
+        }
+        assert_eq!((&map).into_iter().count(), 4);
     }
 }
