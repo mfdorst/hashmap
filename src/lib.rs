@@ -40,7 +40,8 @@ where
     }
 
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        if self.buckets.is_empty() || self.items > self.buckets.len() * 3 / 4 {
+        self.items += 1;
+        if self.items > self.buckets.len() * 3 / 4 {
             self.resize();
         }
         let index = Self::hash_index(&key, self.buckets.len());
@@ -66,7 +67,16 @@ where
         let bucket = &mut self.buckets[index];
         let i = bucket.iter().position(|(k, _)| k == key)?;
         let (_, v) = bucket.swap_remove(i);
+        self.items -= 1;
         Some(v)
+    }
+
+    pub fn len(&self) -> usize {
+        self.items
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items == 0
     }
 
     fn hash_index(key: &K, table_size: usize) -> usize {
@@ -83,9 +93,15 @@ mod tests {
     #[test]
     fn basic_operations() {
         let mut map = HashMap::new();
+        assert_eq!(map.len(), 0);
+        assert!(map.is_empty());
         map.insert("foo", 42);
+        assert_eq!(map.len(), 1);
+        assert!(!map.is_empty());
         assert_eq!(map.get(&"foo"), Some(&42));
         assert_eq!(map.remove(&"foo"), Some(42));
+        assert_eq!(map.len(), 0);
+        assert!(map.is_empty());
         assert_eq!(map.get(&"foo"), None);
     }
 }
