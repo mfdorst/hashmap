@@ -62,6 +62,10 @@ where
             .map(|(_, v)| v)
     }
 
+    pub fn contains_key(&self, key: &K) -> bool {
+        self.get(key).is_some()
+    }
+
     pub fn remove(&mut self, key: &K) -> Option<V> {
         let index = Self::hash_index(key, self.buckets.len());
         let bucket = &mut self.buckets[index];
@@ -98,6 +102,7 @@ mod tests {
         map.insert("foo", 42);
         assert_eq!(map.len(), 1);
         assert!(!map.is_empty());
+        assert!(map.contains_key(&"foo"));
         assert_eq!(map.get(&"foo"), Some(&42));
         assert_eq!(map.remove(&"foo"), Some(42));
         assert_eq!(map.len(), 0);
